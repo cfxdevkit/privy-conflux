@@ -1,9 +1,17 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { getAccessToken, usePrivy, useFundWallet, getEmbeddedConnectedWallet, useWallets, useSetWalletPassword, ConnectedWallet } from "@privy-io/react-auth";
+import {
+  getAccessToken,
+  usePrivy,
+  useFundWallet,
+  getEmbeddedConnectedWallet,
+  useWallets,
+  useSetWalletPassword,
+  ConnectedWallet,
+} from "@privy-io/react-auth";
 import Head from "next/head";
 import { confluxESpaceTestnet } from "viem/chains";
-import {Address, createWalletClient, custom, EIP1193Provider} from 'viem';
+import { Address, createWalletClient, custom, EIP1193Provider } from "viem";
 
 async function verifyToken() {
   const url = "/api/verify";
@@ -26,8 +34,8 @@ async function viemSendTransaction(walletEmb: ConnectedWallet) {
   });
   walletClient.sendTransaction({
     to: walletEmb?.address as `0x${string}`,
-    value: 1000000000000000000n
-  })
+    value: 1000000000000000000n,
+  });
 }
 
 export default function DashboardPage() {
@@ -53,7 +61,7 @@ export default function DashboardPage() {
     exportWallet,
     enrollInMfa,
     signMessage,
-    sendTransaction
+    sendTransaction,
   } = usePrivy();
 
   useEffect(() => {
@@ -73,13 +81,11 @@ export default function DashboardPage() {
   const twitterSubject = user?.twitter?.subject || null;
   const discordSubject = user?.discord?.subject || null;
 
-  const {wallets} = useWallets();
-  const walletEmb = getEmbeddedConnectedWallet(wallets)
-  const {fundWallet} = useFundWallet();
-  const {setWalletPassword} = useSetWalletPassword();
+  const { wallets } = useWallets();
+  const walletEmb = getEmbeddedConnectedWallet(wallets);
+  const { fundWallet } = useFundWallet();
+  const { setWalletPassword } = useSetWalletPassword();
 
-
-  
   return (
     <>
       <Head>
@@ -231,8 +237,8 @@ export default function DashboardPage() {
                       chain: confluxESpaceTestnet,
                       amount: "10",
                       // asset: {erc20: '0x14b2d3bc65e74dae1030eafd8ac30c533c976a9b'}
-                      asset: 'native-currency'
-                    })
+                      asset: "native-currency",
+                    });
                   }
                 }}
                 className="text-sm bg-violet-600 hover:bg-violet-700 py-2 px-4 rounded-md text-white border-none"
@@ -256,22 +262,24 @@ export default function DashboardPage() {
                 className="text-sm bg-violet-600 hover:bg-violet-700 py-2 px-4 rounded-md text-white border-none"
               >
                 Enroll in MFA
-              </button> 
+              </button>
               <button
-                onClick={() => signMessage({message: 'Hello, world!'})}
+                onClick={() => signMessage({ message: "Hello, world!" })}
                 className="text-sm bg-violet-600 hover:bg-violet-700 py-2 px-4 rounded-md text-white border-none"
               >
                 Sign message
-              </button> 
+              </button>
               <button
-                onClick={() => sendTransaction({
-                  to: walletEmb?.address,
-                  value: '1000000000000000000'
-                })}
+                onClick={() =>
+                  sendTransaction({
+                    to: walletEmb?.address,
+                    value: "1000000000000000000",
+                  })
+                }
                 className="text-sm bg-violet-600 hover:bg-violet-700 py-2 px-4 rounded-md text-white border-none"
               >
                 Send transaction
-              </button> 
+              </button>
               <button
                 onClick={() => {
                   if (walletEmb) {
@@ -282,7 +290,7 @@ export default function DashboardPage() {
               >
                 Send transaction with viem
               </button>
-              
+
               {Boolean(verifyResult) && (
                 <details className="w-full">
                   <summary className="mt-6 font-bold uppercase text-sm text-gray-600">

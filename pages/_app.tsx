@@ -2,7 +2,7 @@ import "../styles/globals.css";
 import type { AppProps } from "next/app";
 import Head from "next/head";
 import { PrivyProvider } from "@privy-io/react-auth";
-import {confluxESpace, confluxESpaceTestnet} from 'viem/chains';
+import { confluxESpaceTestnet } from "viem/chains";
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
