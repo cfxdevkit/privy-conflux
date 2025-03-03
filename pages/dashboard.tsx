@@ -11,7 +11,7 @@ import {
 } from "@privy-io/react-auth";
 import Head from "next/head";
 import { confluxESpaceTestnet } from "viem/chains";
-import { Address, createWalletClient, custom, EIP1193Provider } from "viem";
+import { Address, createWalletClient, custom, EIP1193Provider, createPublicClient, http, formatEther } from "viem";
 
 async function verifyToken() {
   const url = "/api/verify";
@@ -25,21 +25,22 @@ async function verifyToken() {
   return await result.json();
 }
 
-async function viemSendTransaction(walletEmb: ConnectedWallet) {
-  const provider = await walletEmb?.getEthereumProvider();
+async function viemSendTransaction(embeddedWallet: ConnectedWallet) {
+  const provider = await embeddedWallet?.getEthereumProvider();
   const walletClient = createWalletClient({
     transport: custom(provider as EIP1193Provider),
-    account: walletEmb?.address as Address,
+    account: embeddedWallet?.address as Address,
     chain: confluxESpaceTestnet,
   });
   walletClient.sendTransaction({
-    to: walletEmb?.address as `0x${string}`,
+    to: embeddedWallet?.address as `0x${string}`,
     value: 1000000000000000000n,
   });
 }
 
 export default function DashboardPage() {
   const [verifyResult, setVerifyResult] = useState();
+  const [balance, setBalance] = useState<string>("0");
   const router = useRouter();
   const {
     ready,
@@ -64,11 +65,52 @@ export default function DashboardPage() {
     sendTransaction,
   } = usePrivy();
 
+  const { wallets } = useWallets();
+  const embeddedWallet = getEmbeddedConnectedWallet(wallets);
+  const { fundWallet } = useFundWallet();
+  const { setWalletPassword } = useSetWalletPassword();
+  const [isWalletLoading, setIsWalletLoading] = useState(true);
+
+  const publicClient = createPublicClient({
+    chain: confluxESpaceTestnet,
+    transport: http(),
+  });
+
+  const fetchBalance = async (address: Address) => {
+    try {
+      const balance = await publicClient.getBalance({ address });
+      const formattedBalance = formatEther(balance);
+      setBalance(formattedBalance);
+    } catch (error) {
+      console.error("Error fetching balance:", error);
+      setBalance("0");
+    }
+  };
+
   useEffect(() => {
     if (ready && !authenticated) {
       router.push("/");
     }
   }, [ready, authenticated, router]);
+
+  useEffect(() => {
+    // Update wallet loading state when embeddedWallet changes
+    setIsWalletLoading(false);
+  }, [embeddedWallet]);
+
+  useEffect(() => {
+    // Fetch balance when wallet address changes
+    if (embeddedWallet?.address) {
+      fetchBalance(embeddedWallet.address as Address);
+    }
+  }, [embeddedWallet?.address]);
+
+  useEffect(() => {
+    // Check if wallet needs password setup and user is authenticated
+    if (!isWalletLoading && ready && authenticated && embeddedWallet?.address && !user?.wallet?.address) {
+      setWalletPassword();
+    }
+  }, [isWalletLoading, ready, authenticated, embeddedWallet, user?.wallet?.address, setWalletPassword]);
 
   const numAccounts = user?.linkedAccounts?.length || 0;
   const canRemoveAccount = numAccounts > 1;
@@ -81,10 +123,11 @@ export default function DashboardPage() {
   const twitterSubject = user?.twitter?.subject || null;
   const discordSubject = user?.discord?.subject || null;
 
-  const { wallets } = useWallets();
-  const walletEmb = getEmbeddedConnectedWallet(wallets);
-  const { fundWallet } = useFundWallet();
-  const { setWalletPassword } = useSetWalletPassword();
+  const formatAddress = (address: string) => {
+    if (!address) return '';
+    // return `${address.slice(0, 6)}...${address.slice(-4)}`;
+    return address;
+  };
 
   return (
     <>
@@ -98,9 +141,24 @@ export default function DashboardPage() {
             <div className="flex flex-row justify-between">
               <h1 className="text-2xl font-semibold">Privy Auth Demo</h1>
               <div className="flex items-center gap-4">
-                {walletEmb?.address && (
-                  <div className="text-sm text-violet-700 bg-violet-100 px-3 py-2 rounded-md">
-                    {walletEmb.address}
+                {isWalletLoading ? (
+                  <div className="text-sm text-violet-700 bg-violet-100 px-3 py-2 rounded-md animate-pulse">
+                    Loading wallet...
+                  </div>
+                ) : embeddedWallet?.address ? (
+                  <div className="flex items-center gap-4">
+                    <div className="text-sm text-violet-700 bg-violet-100 px-3 py-2 rounded-md flex items-center gap-2">
+                      <span className="font-mono">{formatAddress(embeddedWallet.address)}</span>
+                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    </div>
+                    <div className="text-sm text-violet-700 bg-violet-100 px-3 py-2 rounded-md">
+                      {parseFloat(balance).toFixed(4)} CFX
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-sm text-violet-700 bg-violet-100 px-3 py-2 rounded-md flex items-center gap-2">
+                    <span>No wallet connected</span>
+                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
                   </div>
                 )}
                 <button
@@ -239,8 +297,8 @@ export default function DashboardPage() {
 
               <button
                 onClick={async () => {
-                  if (walletEmb?.address) {
-                    fundWallet(walletEmb.address, {
+                  if (embeddedWallet?.address) {
+                    fundWallet(embeddedWallet.address, {
                       chain: confluxESpaceTestnet,
                       amount: "10",
                       // asset: {erc20: '0x14b2d3bc65e74dae1030eafd8ac30c533c976a9b'}
@@ -279,7 +337,7 @@ export default function DashboardPage() {
               <button
                 onClick={() =>
                   sendTransaction({
-                    to: walletEmb?.address,
+                    to: embeddedWallet?.address,
                     value: "1000000000000000000",
                   })
                 }
@@ -289,8 +347,8 @@ export default function DashboardPage() {
               </button>
               <button
                 onClick={() => {
-                  if (walletEmb) {
-                    viemSendTransaction(walletEmb).then(console.log);
+                  if (embeddedWallet) {
+                    viemSendTransaction(embeddedWallet).then(console.log);
                   }
                 }}
                 className="text-sm bg-violet-600 hover:bg-violet-700 py-2 px-4 rounded-md text-white border-none"
