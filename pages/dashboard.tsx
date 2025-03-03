@@ -67,9 +67,12 @@ export default function DashboardPage() {
 
   const { wallets } = useWallets();
   const embeddedWallet = getEmbeddedConnectedWallet(wallets);
-  const { fundWallet } = useFundWallet();
+  const { fundWallet } = useFundWallet({onUserExited: () => {
+    refreshBalance();
+  }});
   const { setWalletPassword } = useSetWalletPassword();
   const [isWalletLoading, setIsWalletLoading] = useState(true);
+  const [hasAttemptedPasswordSetup, setHasAttemptedPasswordSetup] = useState(false);
 
   const publicClient = createPublicClient({
     chain: confluxESpaceTestnet,
@@ -113,10 +116,16 @@ export default function DashboardPage() {
 
   useEffect(() => {
     // Check if wallet needs password setup and user is authenticated
-    if (!isWalletLoading && ready && authenticated && embeddedWallet?.address && !user?.wallet?.address) {
-      setWalletPassword();
+    if (!isWalletLoading && ready && authenticated && embeddedWallet?.address && !hasAttemptedPasswordSetup) {
+      const linkedWallet = user?.linkedAccounts?.find(
+        account => 'address' in account && account.address === embeddedWallet.address
+      );
+      if (linkedWallet && 'recoveryMethod' in linkedWallet && linkedWallet.recoveryMethod === "privy") {
+        setWalletPassword();
+        setHasAttemptedPasswordSetup(true);
+      }
     }
-  }, [isWalletLoading, ready, authenticated, embeddedWallet, user?.wallet?.address, setWalletPassword]);
+  }, [isWalletLoading, ready, authenticated, embeddedWallet, user?.linkedAccounts, hasAttemptedPasswordSetup]);
 
   const numAccounts = user?.linkedAccounts?.length || 0;
   const canRemoveAccount = numAccounts > 1;
@@ -300,7 +309,9 @@ export default function DashboardPage() {
               >
                 Verify token on server
               </button>
+            </div>
 
+            <div className="mt-4 flex gap-4 flex-wrap">
               <button
                 onClick={async () => {
                   if (embeddedWallet?.address) {
@@ -309,7 +320,6 @@ export default function DashboardPage() {
                       amount: "10",
                       asset: "native-currency",
                     });
-                    refreshBalance();
                   }
                 }}
                 className="text-sm bg-violet-600 hover:bg-violet-700 py-2 px-4 rounded-md text-white border-none"
@@ -365,18 +375,18 @@ export default function DashboardPage() {
               >
                 Send transaction with viem
               </button>
-
-              {Boolean(verifyResult) && (
-                <details className="w-full">
-                  <summary className="mt-6 font-bold uppercase text-sm text-gray-600">
-                    Server verify result
-                  </summary>
-                  <pre className="max-w-4xl bg-slate-700 text-slate-50 font-mono p-4 text-xs sm:text-sm rounded-md mt-2">
-                    {JSON.stringify(verifyResult, null, 2)}
-                  </pre>
-                </details>
-              )}
             </div>
+
+            {Boolean(verifyResult) && (
+              <details className="w-full">
+                <summary className="mt-6 font-bold uppercase text-sm text-gray-600">
+                  Server verify result
+                </summary>
+                <pre className="max-w-4xl bg-slate-700 text-slate-50 font-mono p-4 text-xs sm:text-sm rounded-md mt-2">
+                  {JSON.stringify(verifyResult, null, 2)}
+                </pre>
+              </details>
+            )}
 
             <p className="mt-6 font-bold uppercase text-sm text-gray-600">
               User object
