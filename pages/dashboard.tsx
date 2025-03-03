@@ -87,6 +87,12 @@ export default function DashboardPage() {
     }
   };
 
+  const refreshBalance = () => {
+    if (embeddedWallet?.address) {
+      fetchBalance(embeddedWallet.address as Address);
+    }
+  };
+
   useEffect(() => {
     if (ready && !authenticated) {
       router.push("/");
@@ -298,12 +304,12 @@ export default function DashboardPage() {
               <button
                 onClick={async () => {
                   if (embeddedWallet?.address) {
-                    fundWallet(embeddedWallet.address, {
+                    await fundWallet(embeddedWallet.address, {
                       chain: confluxESpaceTestnet,
                       amount: "10",
-                      // asset: {erc20: '0x14b2d3bc65e74dae1030eafd8ac30c533c976a9b'}
                       asset: "native-currency",
                     });
+                    refreshBalance();
                   }
                 }}
                 className="text-sm bg-violet-600 hover:bg-violet-700 py-2 px-4 rounded-md text-white border-none"
@@ -335,20 +341,24 @@ export default function DashboardPage() {
                 Sign message
               </button>
               <button
-                onClick={() =>
-                  sendTransaction({
-                    to: embeddedWallet?.address,
-                    value: "1000000000000000000",
-                  })
-                }
+                onClick={async () => {
+                  if (embeddedWallet?.address) {
+                    await sendTransaction({
+                      to: embeddedWallet.address,
+                      value: "1000000000000000000",
+                    });
+                    refreshBalance();
+                  }
+                }}
                 className="text-sm bg-violet-600 hover:bg-violet-700 py-2 px-4 rounded-md text-white border-none"
               >
                 Send transaction
               </button>
               <button
-                onClick={() => {
+                onClick={async () => {
                   if (embeddedWallet) {
-                    viemSendTransaction(embeddedWallet).then(console.log);
+                    await viemSendTransaction(embeddedWallet);
+                    refreshBalance();
                   }
                 }}
                 className="text-sm bg-violet-600 hover:bg-violet-700 py-2 px-4 rounded-md text-white border-none"
