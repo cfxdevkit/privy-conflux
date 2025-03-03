@@ -97,12 +97,19 @@ export default function DashboardPage() {
           <>
             <div className="flex flex-row justify-between">
               <h1 className="text-2xl font-semibold">Privy Auth Demo</h1>
-              <button
-                onClick={logout}
-                className="text-sm bg-violet-200 hover:text-violet-900 py-2 px-4 rounded-md text-violet-700"
-              >
-                Logout
-              </button>
+              <div className="flex items-center gap-4">
+                {walletEmb?.address && (
+                  <div className="text-sm text-violet-700 bg-violet-100 px-3 py-2 rounded-md">
+                    {walletEmb.address}
+                  </div>
+                )}
+                <button
+                  onClick={logout}
+                  className="text-sm bg-violet-200 hover:text-violet-900 py-2 px-4 rounded-md text-violet-700"
+                >
+                  Logout
+                </button>
+              </div>
             </div>
             <div className="mt-12 flex gap-4 flex-wrap">
               {googleSubject ? (

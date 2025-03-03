@@ -1,0 +1,8 @@
+This is a technical preview/example application demonstrating OAuth integration with Google. It serves as a development and testing environment for authentication features. The application is not intended for production use and is subject to change without notice.
+
+Purpose:
+- Demonstrate OAuth 2.0 implementation
+- Test authentication flows
+- Development and learning purposes
+
+Note: This is a development version and should not be used for production purposes or storing sensitive data. 
