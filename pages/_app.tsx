@@ -22,7 +22,9 @@ function MyApp({ Component, pageProps }: AppProps) {
           defaultChain: confluxESpaceTestnet,
           supportedChains: [confluxESpaceTestnet],
           embeddedWallets: {
-            createOnLogin: "all-users",
+            ethereum: {
+              createOnLogin: "all-users",
+            },
           },
         }}
       >

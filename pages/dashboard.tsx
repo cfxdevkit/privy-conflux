@@ -6,7 +6,6 @@ import {
   useFundWallet,
   getEmbeddedConnectedWallet,
   useWallets,
-  useSetWalletPassword,
   ConnectedWallet,
 } from "@privy-io/react-auth";
 import Head from "next/head";
@@ -70,7 +69,6 @@ export default function DashboardPage() {
   const { fundWallet } = useFundWallet({onUserExited: () => {
     refreshBalance();
   }});
-  const { setWalletPassword } = useSetWalletPassword();
   const [isWalletLoading, setIsWalletLoading] = useState(true);
   const [hasAttemptedPasswordSetup, setHasAttemptedPasswordSetup] = useState(false);
 
@@ -121,7 +119,7 @@ export default function DashboardPage() {
         account => 'address' in account && account.address === embeddedWallet.address
       );
       if (linkedWallet && 'recoveryMethod' in linkedWallet && linkedWallet.recoveryMethod === "privy") {
-        setWalletPassword();
+        // setWalletPassword is no longer available in Privy v3
         setHasAttemptedPasswordSetup(true);
       }
     }
@@ -315,11 +313,7 @@ export default function DashboardPage() {
               <button
                 onClick={async () => {
                   if (embeddedWallet?.address) {
-                    await fundWallet(embeddedWallet.address, {
-                      chain: confluxESpaceTestnet,
-                      amount: "10",
-                      asset: "native-currency",
-                    });
+                    await fundWallet({ address: embeddedWallet.address });
                   }
                 }}
                 className="text-sm bg-violet-600 hover:bg-violet-700 py-2 px-4 rounded-md text-white border-none"
@@ -331,12 +325,6 @@ export default function DashboardPage() {
                 className="text-sm bg-violet-600 hover:bg-violet-700 py-2 px-4 rounded-md text-white border-none"
               >
                 Export wallet
-              </button>
-              <button
-                onClick={() => setWalletPassword()}
-                className="text-sm bg-violet-600 hover:bg-violet-700 py-2 px-4 rounded-md text-white border-none"
-              >
-                Set wallet password
               </button>
               <button
                 onClick={() => enrollInMfa(true)}
