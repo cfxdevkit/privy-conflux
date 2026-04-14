@@ -9,8 +9,27 @@ import {
   ConnectedWallet,
 } from "@privy-io/react-auth";
 import Head from "next/head";
+import type { GetServerSideProps } from "next";
 import { confluxESpaceTestnet } from "viem/chains";
-import { Address, createWalletClient, custom, EIP1193Provider, createPublicClient, http, formatEther } from "viem";
+import {
+  Address,
+  createWalletClient,
+  custom,
+  EIP1193Provider,
+  createPublicClient,
+  http,
+  formatEther,
+} from "viem";
+
+const publicClient = createPublicClient({
+  chain: confluxESpaceTestnet,
+  transport: http(),
+});
+
+async function fetchFormattedBalance(address: Address) {
+  const balance = await publicClient.getBalance({ address });
+  return formatEther(balance);
+}
 
 async function verifyToken() {
   const url = "/api/verify";
@@ -36,6 +55,10 @@ async function viemSendTransaction(embeddedWallet: ConnectedWallet) {
     value: 1000000000000000000n,
   });
 }
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  return { props: {} };
+};
 
 export default function DashboardPage() {
   const [verifyResult, setVerifyResult] = useState();
@@ -66,31 +89,28 @@ export default function DashboardPage() {
 
   const { wallets } = useWallets();
   const embeddedWallet = getEmbeddedConnectedWallet(wallets);
-  const { fundWallet } = useFundWallet({onUserExited: () => {
-    refreshBalance();
-  }});
-  const [isWalletLoading, setIsWalletLoading] = useState(true);
-  const [hasAttemptedPasswordSetup, setHasAttemptedPasswordSetup] = useState(false);
-
-  const publicClient = createPublicClient({
-    chain: confluxESpaceTestnet,
-    transport: http(),
+  const { fundWallet } = useFundWallet({
+    onUserExited: () => {
+      refreshBalance();
+    },
   });
+  const hasLinkedWallet = Boolean(
+    user?.linkedAccounts?.some((account) => "address" in account),
+  );
+  const isWalletLoading =
+    authenticated && hasLinkedWallet && !embeddedWallet?.address;
 
-  const fetchBalance = async (address: Address) => {
-    try {
-      const balance = await publicClient.getBalance({ address });
-      const formattedBalance = formatEther(balance);
-      setBalance(formattedBalance);
-    } catch (error) {
-      console.error("Error fetching balance:", error);
-      setBalance("0");
-    }
-  };
-
-  const refreshBalance = () => {
+  const refreshBalance = async () => {
     if (embeddedWallet?.address) {
-      fetchBalance(embeddedWallet.address as Address);
+      try {
+        const formattedBalance = await fetchFormattedBalance(
+          embeddedWallet.address as Address,
+        );
+        setBalance(formattedBalance);
+      } catch (error) {
+        console.error("Error fetching balance:", error);
+        setBalance("0");
+      }
     }
   };
 
@@ -101,29 +121,36 @@ export default function DashboardPage() {
   }, [ready, authenticated, router]);
 
   useEffect(() => {
-    // Update wallet loading state when embeddedWallet changes
-    setIsWalletLoading(false);
-  }, [embeddedWallet]);
-
-  useEffect(() => {
-    // Fetch balance when wallet address changes
-    if (embeddedWallet?.address) {
-      fetchBalance(embeddedWallet.address as Address);
+    if (!embeddedWallet?.address) {
+      return;
     }
-  }, [embeddedWallet?.address]);
 
-  useEffect(() => {
-    // Check if wallet needs password setup and user is authenticated
-    if (!isWalletLoading && ready && authenticated && embeddedWallet?.address && !hasAttemptedPasswordSetup) {
-      const linkedWallet = user?.linkedAccounts?.find(
-        account => 'address' in account && account.address === embeddedWallet.address
-      );
-      if (linkedWallet && 'recoveryMethod' in linkedWallet && linkedWallet.recoveryMethod === "privy") {
-        // setWalletPassword is no longer available in Privy v3
-        setHasAttemptedPasswordSetup(true);
+    let isCancelled = false;
+
+    const loadBalance = async () => {
+      try {
+        const formattedBalance = await fetchFormattedBalance(
+          embeddedWallet.address as Address,
+        );
+
+        if (!isCancelled) {
+          setBalance(formattedBalance);
+        }
+      } catch (error) {
+        console.error("Error fetching balance:", error);
+
+        if (!isCancelled) {
+          setBalance("0");
+        }
       }
-    }
-  }, [isWalletLoading, ready, authenticated, embeddedWallet, user?.linkedAccounts, hasAttemptedPasswordSetup]);
+    };
+
+    void loadBalance();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [embeddedWallet?.address]);
 
   const numAccounts = user?.linkedAccounts?.length || 0;
   const canRemoveAccount = numAccounts > 1;
@@ -137,7 +164,7 @@ export default function DashboardPage() {
   const discordSubject = user?.discord?.subject || null;
 
   const formatAddress = (address: string) => {
-    if (!address) return '';
+    if (!address) return "";
     // return `${address.slice(0, 6)}...${address.slice(-4)}`;
     return address;
   };
@@ -161,7 +188,9 @@ export default function DashboardPage() {
                 ) : embeddedWallet?.address ? (
                   <div className="flex items-center gap-4">
                     <div className="text-sm text-violet-700 bg-violet-100 px-3 py-2 rounded-md flex items-center gap-2">
-                      <span className="font-mono">{formatAddress(embeddedWallet.address)}</span>
+                      <span className="font-mono">
+                        {formatAddress(embeddedWallet.address)}
+                      </span>
                       <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                     </div>
                     <div className="text-sm text-violet-700 bg-violet-100 px-3 py-2 rounded-md">

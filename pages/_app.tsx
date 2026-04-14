@@ -5,6 +5,13 @@ import { PrivyProvider } from "@privy-io/react-auth";
 import { confluxESpaceTestnet } from "viem/chains";
 
 function MyApp({ Component, pageProps }: AppProps) {
+  const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+  const content = (
+    <div className="font-sans">
+      <Component {...pageProps} />
+    </div>
+  );
+
   return (
     <>
       <Head>
@@ -16,22 +23,24 @@ function MyApp({ Component, pageProps }: AppProps) {
         <title>Privy Auth Starter</title>
         <meta name="description" content="Privy Auth Starter" />
       </Head>
-      <PrivyProvider
-        appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID || ""}
-        config={{
-          defaultChain: confluxESpaceTestnet,
-          supportedChains: [confluxESpaceTestnet],
-          embeddedWallets: {
-            ethereum: {
-              createOnLogin: "all-users",
+      {appId ? (
+        <PrivyProvider
+          appId={appId}
+          config={{
+            defaultChain: confluxESpaceTestnet,
+            supportedChains: [confluxESpaceTestnet],
+            embeddedWallets: {
+              ethereum: {
+                createOnLogin: "all-users",
+              },
             },
-          },
-        }}
-      >
-        <div className="font-sans">
-          <Component {...pageProps} />
-        </div>
-      </PrivyProvider>
+          }}
+        >
+          {content}
+        </PrivyProvider>
+      ) : (
+        content
+      )}
     </>
   );
 }
