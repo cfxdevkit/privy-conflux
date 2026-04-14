@@ -1,8 +1,12 @@
 import "../styles/globals.css";
 import type { AppProps } from "next/app";
 import Head from "next/head";
-import { PrivyProvider } from "@privy-io/react-auth";
-import { confluxESpaceTestnet } from "viem/chains";
+import dynamic from "next/dynamic";
+
+const ClientPrivyProvider = dynamic(
+  () => import("../components/client-privy-provider"),
+  { ssr: false },
+);
 
 function MyApp({ Component, pageProps }: AppProps) {
   const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
@@ -24,20 +28,7 @@ function MyApp({ Component, pageProps }: AppProps) {
         <meta name="description" content="Privy Auth Starter" />
       </Head>
       {appId ? (
-        <PrivyProvider
-          appId={appId}
-          config={{
-            defaultChain: confluxESpaceTestnet,
-            supportedChains: [confluxESpaceTestnet],
-            embeddedWallets: {
-              ethereum: {
-                createOnLogin: "all-users",
-              },
-            },
-          }}
-        >
-          {content}
-        </PrivyProvider>
+        <ClientPrivyProvider appId={appId}>{content}</ClientPrivyProvider>
       ) : (
         content
       )}

@@ -8,8 +8,8 @@
     "@hpke/core": "1.7.5"
   },
   "scripts": {
-    "dev": "next dev --turbopack --experimental-https",
-    "build": "next build",
+    "dev": "next dev --webpack --experimental-https",
+    "build": "next build --webpack",
     "start": "next start",
     "format": "npx prettier --write \"{components,pages,lib}/**/*.{ts,tsx,js,jsx}\"",
     "lint": "eslint components pages lib --ext .js,.jsx,.ts,.tsx && npx prettier --check \"{components,pages,lib}/**/*.{ts,tsx,js,jsx}\" && npx tsc --noEmit"
